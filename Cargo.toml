@@ -1,0 +1,10 @@
+[package]
+name = "seriesdb"
+version = "0.1.0"
+authors = ["Chaoqian Xu <chaoranxu@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rocksdb = {git = "https://github.com/xuchaoqian/rust-rocksdb.git", branch = "master"}
+bytes = "0.4"
+byteorder = "1.3"
