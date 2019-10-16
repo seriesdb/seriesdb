@@ -1,3 +1,4 @@
+use crate::consts::*;
 use rocksdb::Options as InnerOptions;
 
 pub struct Options {
@@ -34,7 +35,7 @@ impl Options {
     fn build_default_options() -> InnerOptions {
         let mut opts = InnerOptions::default();
         opts.create_if_missing(true);
-        opts.set_prefix_extractor(rocksdb::SliceTransform::create_fixed_prefix(4));
+        opts.set_prefix_extractor(rocksdb::SliceTransform::create_fixed_prefix(TABLE_ID_LEN));
         opts.set_max_open_files(-1);
         opts.set_use_fsync(false);
         opts.set_bytes_per_sync(8388608);

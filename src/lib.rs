@@ -4,7 +4,7 @@ pub mod db;
 pub mod iterator;
 pub mod options;
 pub mod table;
+mod types;
 pub mod utils;
 
-pub type Engine = rocksdb::DB;
-pub type Error = rocksdb::Error;
+pub use types::*;

@@ -1,17 +1,18 @@
+use crate::types::*;
 use crate::utils;
 use bytes::Bytes;
 use rocksdb::DBRawIterator;
 
 pub struct Iterator<'a> {
     inner: DBRawIterator<'a>,
-    table_id: [u8; 4],
+    table_id: TableId,
     anchor: &'a Bytes,
 }
 
 impl<'a> Iterator<'a> {
     pub(in crate) fn new(
         engine: &'a crate::Engine,
-        table_id: [u8; 4],
+        table_id: TableId,
         anchor: &'a Bytes,
     ) -> Iterator<'a> {
         let mut opts = rocksdb::ReadOptions::default();
@@ -26,7 +27,7 @@ impl<'a> Iterator<'a> {
 
     #[inline]
     pub fn is_valid(&self) -> bool {
-        if self.inner.valid() && !self.is_anchor() {
+        if self.inner.valid() {
             return true;
         } else {
             return false;
@@ -40,10 +41,7 @@ impl<'a> Iterator<'a> {
 
     #[inline]
     pub fn seek_to_last(&mut self) {
-        self.inner.seek(self.anchor);
-        if self.inner.valid() {
-            self.inner.prev()
-        }
+        self.inner.seek_for_prev(self.anchor);
     }
 
     #[inline]
@@ -84,11 +82,6 @@ impl<'a> Iterator<'a> {
     #[inline]
     fn inner_key(&self) -> Option<&[u8]> {
         unsafe { self.inner.key_inner() }
-    }
-
-    #[inline]
-    fn is_anchor(&self) -> bool {
-        return self.inner_key().unwrap() == self.anchor;
     }
 }
 

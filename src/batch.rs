@@ -1,17 +1,18 @@
+use crate::types::*;
 use crate::utils::build_inner_key;
 use rocksdb::{Error, WriteBatch};
 
 pub struct Batch {
     pub(in crate) inner: WriteBatch,
-    table_id: [u8; 4],
+    table_id: TableId,
 }
 
 impl Batch {
     #[inline]
-    pub(in crate) fn new(table_id: [u8; 4]) -> Batch {
+    pub(in crate) fn new(table_id: TableId) -> Batch {
         Batch {
             inner: WriteBatch::default(),
-            table_id: table_id,
+            table_id,
         }
     }
 

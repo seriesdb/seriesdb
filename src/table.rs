@@ -1,5 +1,6 @@
 use crate::batch::Batch;
 use crate::iterator::Iterator;
+use crate::types::*;
 use crate::utils;
 use crate::Engine;
 use crate::Error;
@@ -9,7 +10,7 @@ use std::fmt;
 
 pub struct Table<'a> {
     pub(in crate) engine: &'a Engine,
-    pub(in crate) id: [u8; 4],
+    pub(in crate) id: TableId,
     pub(in crate) anchor: Bytes,
 }
 
@@ -21,7 +22,7 @@ impl<'a> fmt::Debug for Table<'a> {
 
 impl<'a> Table<'a> {
     #[inline]
-    pub(in crate) fn new(engine: &Engine, id: [u8; 4], anchor: Bytes) -> Table {
+    pub(in crate) fn new(engine: &Engine, id: TableId, anchor: Bytes) -> Table {
         Table { engine, id, anchor }
     }
 
