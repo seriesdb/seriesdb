@@ -55,8 +55,8 @@ impl Db {
             batch.delete(&utils::build_name_to_id_table_inner_key(name))?;
             batch.delete(&utils::build_id_to_name_table_inner_key(id))?;
             batch.delete_range(
-                id,
-                utils::build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN),
+                id.as_ref(),
+                utils::build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN).as_ref(),
             )?;
         }
         self.engine.write(batch)
