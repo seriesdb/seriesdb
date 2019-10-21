@@ -1,25 +1,18 @@
 use crate::types::*;
-use crate::utils;
+use crate::utils::*;
 use bytes::Bytes;
 use rocksdb::DBRawIterator;
 
-pub struct Iterator<'a> {
+pub struct EntryCursor<'a> {
     inner: DBRawIterator<'a>,
     table_id: TableId,
     anchor: &'a Bytes,
 }
 
-impl<'a> Iterator<'a> {
-    pub(in crate) fn new(
-        engine: &'a crate::Engine,
-        table_id: TableId,
-        anchor: &'a Bytes,
-    ) -> Iterator<'a> {
-        let mut opts = rocksdb::ReadOptions::default();
-        opts.set_prefix_same_as_start(true);
-        let iter: DBRawIterator = engine.raw_iterator_opt(&opts);
-        Iterator {
-            inner: iter,
+impl<'a> EntryCursor<'a> {
+    pub(in crate) fn new(inner: DBRawIterator<'a>, table_id: TableId, anchor: &'a Bytes) -> Self {
+        EntryCursor {
+            inner,
             table_id,
             anchor,
         }
@@ -46,13 +39,13 @@ impl<'a> Iterator<'a> {
 
     #[inline]
     pub fn seek<K: AsRef<[u8]>>(&mut self, key: K) {
-        self.inner.seek(utils::build_inner_key(self.table_id, key));
+        self.inner.seek(build_inner_key(self.table_id, key));
     }
 
     #[inline]
     pub fn seek_for_prev<K: AsRef<[u8]>>(&mut self, key: K) {
         self.inner
-            .seek_for_prev(utils::build_inner_key(self.table_id, key));
+            .seek_for_prev(build_inner_key(self.table_id, key));
     }
 
     #[inline]
@@ -68,7 +61,7 @@ impl<'a> Iterator<'a> {
     #[inline]
     pub fn key(&self) -> Option<&[u8]> {
         if let Some(v) = self.inner_key() {
-            Some(utils::extract_key(v))
+            Some(extract_key(v))
         } else {
             None
         }
@@ -87,7 +80,7 @@ impl<'a> Iterator<'a> {
 
 #[test]
 fn test_seek() {
-    utils::run_test("test_seek", |db| {
+    run_test("test_seek", |db| {
         let name = "huobi.btc.usdt.1m";
         let table = db.new_table(name).unwrap();
         let k1 = b"k1";
@@ -99,7 +92,7 @@ fn test_seek() {
         assert!(table.put(k1, v1).is_ok());
         assert!(table.put(k2, v2).is_ok());
         assert!(table.put(k3, v3).is_ok());
-        let mut iter = table.iter();
+        let mut iter = table.cursor();
         iter.seek_to_first();
         assert!(iter.is_valid());
         assert_eq!(k1, iter.key().unwrap());

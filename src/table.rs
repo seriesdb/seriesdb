@@ -1,11 +1,11 @@
 use crate::batch::Batch;
-use crate::iterator::Iterator;
+use crate::entry_cursor::EntryCursor;
 use crate::types::*;
-use crate::utils;
+use crate::utils::*;
 use crate::Engine;
 use crate::Error;
 use bytes::Bytes;
-use rocksdb::DBVector;
+use rocksdb::{DBVector, ReadOptions};
 use std::fmt;
 
 pub struct Table<'a> {
@@ -32,7 +32,7 @@ impl<'a> Table<'a> {
         K: AsRef<[u8]>,
         V: AsRef<[u8]>,
     {
-        self.engine.put(utils::build_inner_key(self.id, key), value)
+        self.engine.put(build_inner_key(self.id, key), value)
     }
 
     #[inline]
@@ -47,23 +47,25 @@ impl<'a> Table<'a> {
 
     #[inline]
     pub fn delete<K: AsRef<[u8]>>(&self, key: K) -> Result<(), Error> {
-        self.engine.delete(utils::build_inner_key(self.id, key))
+        self.engine.delete(build_inner_key(self.id, key))
     }
 
     #[inline]
     pub fn get<K: AsRef<[u8]>>(&self, key: K) -> Result<Option<DBVector>, Error> {
-        self.engine.get(utils::build_inner_key(self.id, key))
+        self.engine.get(build_inner_key(self.id, key))
     }
 
     #[inline]
-    pub fn iter(&self) -> Iterator {
-        Iterator::new(self.engine, self.id, &self.anchor)
+    pub fn cursor(&self) -> EntryCursor {
+        let mut opts = ReadOptions::default();
+        opts.set_prefix_same_as_start(true);
+        EntryCursor::new(self.engine.raw_iterator_opt(&opts), self.id, &self.anchor)
     }
 }
 
 #[test]
 fn test_put() {
-    utils::run_test("test_put", |db| {
+    run_test("test_put", |db| {
         let name = "huobi.btc.usdt.1min";
         let table = db.new_table(name).unwrap();
         let result = table.put(b"k111", b"v111");
@@ -74,7 +76,7 @@ fn test_put() {
 #[allow(unused_must_use)]
 #[test]
 fn test_get() {
-    utils::run_test("test_get", |db| {
+    run_test("test_get", |db| {
         let name = "huobi.btc.usdt.1min";
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111");
@@ -86,7 +88,7 @@ fn test_get() {
 #[allow(unused_must_use)]
 #[test]
 fn test_delete() {
-    utils::run_test("test_delete", |db| {
+    run_test("test_delete", |db| {
         let name = "huobi.btc.usdt.1min";
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111");

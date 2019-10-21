@@ -34,16 +34,6 @@ pub fn u8s_to_u32(u8s: &[u8]) -> u32 {
 /// key utils
 ////////////////////////////////////////////////////////////////////////////////
 #[inline]
-pub fn build_inner_key<K: AsRef<[u8]>>(table_id: TableId, key: K) -> Bytes {
-    let key = key.as_ref();
-    let table_id = table_id.as_ref();
-    let mut buf = Bytes::with_capacity(table_id.len() + key.len());
-    buf.extend_from_slice(table_id);
-    buf.extend_from_slice(key);
-    buf
-}
-
-#[inline]
 pub fn build_info_table_inner_key(item_id: ItemId) -> Bytes {
     build_inner_key(INFO_TABLE_ID, item_id)
 }
@@ -59,8 +49,36 @@ pub fn build_id_to_name_table_inner_key(table_id: TableId) -> Bytes {
 }
 
 #[inline]
+pub fn build_delete_range_hint_table_inner_key<F, T>(from_key: F, to_key: T) -> Bytes
+where
+    F: AsRef<[u8]>,
+    T: AsRef<[u8]>,
+{
+    let key = rmp_serde::to_vec(&(from_key.as_ref().to_vec(), to_key.as_ref().to_vec())).unwrap();
+    build_inner_key(DELETE_RANGE_HINT_TABLE_ID, key)
+}
+
+#[inline]
+pub fn extract_delete_range_hint<K: AsRef<[u8]>>(inner_key: K) -> (Bytes, Bytes) {
+    let key = extract_key(inner_key.as_ref());
+    let (from_key, to_key): (Vec<u8>, Vec<u8>) = rmp_serde::from_slice(key).unwrap();
+    (Bytes::from(from_key), Bytes::from(to_key))
+}
+
+#[inline]
+#[inline]
 pub fn build_userland_table_anchor(table_id: TableId, key_len: u8) -> Bytes {
     build_inner_key(table_id, set_every_bit_to_one((key_len + 1).into()))
+}
+
+#[inline]
+pub fn build_inner_key<K: AsRef<[u8]>>(table_id: TableId, key: K) -> Bytes {
+    let key = key.as_ref();
+    let table_id = table_id.as_ref();
+    let mut buf = Bytes::with_capacity(table_id.len() + key.len());
+    buf.extend_from_slice(table_id);
+    buf.extend_from_slice(key);
+    buf
 }
 
 #[inline]
@@ -114,12 +132,6 @@ fn teardown(path: &str) {
 /// test cases
 ////////////////////////////////////////////////////////////////////////////////
 #[test]
-fn test_build_inner_key() {
-    let inner_key = build_inner_key([0, 0, 4, 0], [0, 0, 0, 0]);
-    assert_eq!(inner_key, vec![0, 0, 4, 0, 0, 0, 0, 0]);
-}
-
-#[test]
 fn test_build_info_table_inner_key() {
     assert_eq!(build_info_table_inner_key([0, 0]), vec![0, 0, 0, 0, 0, 0]);
 }
@@ -144,11 +156,33 @@ fn test_build_id_to_name_table_inner_key() {
 }
 
 #[test]
+fn test_build_delete_range_hint_table_inner_key() {
+    assert_eq!(
+        build_delete_range_hint_table_inner_key([0, 0, 4, 0], [0, 0, 4, 1]).as_ref(),
+        b"\0\0\0\x03\x92\x94\0\0\x04\0\x94\0\0\x04\x01"
+    );
+}
+
+#[test]
+fn test_extract_delete_range_hint() {
+    let inner_key = b"\0\0\0\x03\x92\x94\0\0\x04\0\x94\0\0\x04\x01";
+    let (from_key, to_key) = extract_delete_range_hint(inner_key);
+    assert_eq!(from_key.as_ref(), [0, 0, 4, 0]);
+    assert_eq!(to_key.as_ref(), [0, 0, 4, 1]);
+}
+
+#[test]
 fn test_build_userland_table_anchor() {
     assert_eq!(
         build_userland_table_anchor([0, 0, 4, 0], 4),
         vec![0, 0, 4, 0, 255, 255, 255, 255, 255]
     );
+}
+
+#[test]
+fn test_build_inner_key() {
+    let inner_key = build_inner_key([0, 0, 4, 0], [0, 0, 0, 0]);
+    assert_eq!(inner_key, vec![0, 0, 4, 0, 0, 0, 0, 0]);
 }
 
 #[test]

@@ -1,5 +1,5 @@
 use crate::consts::*;
-use rocksdb::Options as InnerOptions;
+use rocksdb::{DBCompactionStyle, Options as InnerOptions, SliceTransform};
 
 pub struct Options {
     pub(in crate) inner: InnerOptions,
@@ -35,7 +35,7 @@ impl Options {
     fn build_default_options() -> InnerOptions {
         let mut opts = InnerOptions::default();
         opts.create_if_missing(true);
-        opts.set_prefix_extractor(rocksdb::SliceTransform::create_fixed_prefix(TABLE_ID_LEN));
+        opts.set_prefix_extractor(SliceTransform::create_fixed_prefix(TABLE_ID_LEN));
         opts.set_max_open_files(-1);
         opts.set_use_fsync(false);
         opts.set_bytes_per_sync(8388608);
@@ -46,7 +46,7 @@ impl Options {
         opts.set_target_file_size_base(1073741824);
         opts.set_level_zero_stop_writes_trigger(1024);
         opts.set_level_zero_slowdown_writes_trigger(800);
-        opts.set_compaction_style(rocksdb::DBCompactionStyle::Universal);
+        opts.set_compaction_style(DBCompactionStyle::Universal);
         opts.set_max_background_compactions(4);
         opts.set_max_background_flushes(4);
         opts.set_disable_auto_compactions(true);

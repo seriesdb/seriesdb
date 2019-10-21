@@ -1,10 +1,13 @@
 pub mod batch;
 mod consts;
 pub mod db;
-pub mod iterator;
+pub mod entry_cursor;
 pub mod options;
 pub mod table;
-mod types;
+pub mod types;
+pub mod update;
+pub mod update_iterator;
+pub mod updates;
 pub mod utils;
 
 pub use types::*;

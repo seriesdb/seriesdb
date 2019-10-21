@@ -19,5 +19,8 @@ pub(in crate) const NAME_TO_ID_TABLE_ID: TableId = [0, 0, 0, 1];
 // 2 as BigEndian
 pub(in crate) const ID_TO_NAME_TABLE_ID: TableId = [0, 0, 0, 2];
 
+// 3 as BigEndian
+pub(in crate) const DELETE_RANGE_HINT_TABLE_ID: TableId = [0, 0, 0, 3];
+
 // 0 as BigEndian
 pub(in crate) const SEED_ITEM_ID: ItemId = [0, 0];
