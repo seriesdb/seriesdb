@@ -7,12 +7,12 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 pub struct UpdateBatch {
     pub sn: u64,
-    pub batches: Vec<Update>,
+    pub updates: Vec<Update>,
 }
 
 impl WriteBatchIterator for UpdateBatch {
     fn put(&mut self, key: Box<[u8]>, value: Box<[u8]>) {
-        self.batches.push(Update::Put {
+        self.updates.push(Update::Put {
             key: Bytes::from(key.as_ref()),
             value: Bytes::from(value.as_ref()),
         })
@@ -21,9 +21,9 @@ impl WriteBatchIterator for UpdateBatch {
         let table_id = extract_table_id(&key);
         if table_id == DELETE_RANGE_HINT_TABLE_ID {
             let (from_key, to_key) = extract_delete_range_hint(key);
-            self.batches.push(Update::DeleteRange { from_key, to_key })
+            self.updates.push(Update::DeleteRange { from_key, to_key })
         } else {
-            self.batches.push(Update::Delete {
+            self.updates.push(Update::Delete {
                 key: Bytes::from(key.as_ref()),
             })
         }
@@ -32,7 +32,7 @@ impl WriteBatchIterator for UpdateBatch {
 
 impl Debug for UpdateBatch {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{:?}@{:?}", &self.batches, self.sn)
+        write!(f, "{:?}@{:?}", &self.updates, self.sn)
     }
 }
 
@@ -40,7 +40,7 @@ impl UpdateBatch {
     pub fn new() -> Self {
         UpdateBatch {
             sn: 0,
-            batches: vec![],
+            updates: vec![],
         }
     }
 }
