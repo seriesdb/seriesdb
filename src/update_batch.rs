@@ -5,14 +5,14 @@ use bytes::Bytes;
 use rocksdb::WriteBatchIterator;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 
-pub struct Updates {
+pub struct UpdateBatch {
     pub sn: u64,
-    pub vec: Vec<Update>,
+    pub batches: Vec<Update>,
 }
 
-impl WriteBatchIterator for Updates {
+impl WriteBatchIterator for UpdateBatch {
     fn put(&mut self, key: Box<[u8]>, value: Box<[u8]>) {
-        self.vec.push(Update::Put {
+        self.batches.push(Update::Put {
             key: Bytes::from(key.as_ref()),
             value: Bytes::from(value.as_ref()),
         })
@@ -21,23 +21,26 @@ impl WriteBatchIterator for Updates {
         let table_id = extract_table_id(&key);
         if table_id == DELETE_RANGE_HINT_TABLE_ID {
             let (from_key, to_key) = extract_delete_range_hint(key);
-            self.vec.push(Update::DeleteRange { from_key, to_key })
+            self.batches.push(Update::DeleteRange { from_key, to_key })
         } else {
-            self.vec.push(Update::Delete {
+            self.batches.push(Update::Delete {
                 key: Bytes::from(key.as_ref()),
             })
         }
     }
 }
 
-impl Debug for Updates {
+impl Debug for UpdateBatch {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{:?}@{:?}", &self.vec, self.sn)
+        write!(f, "{:?}@{:?}", &self.batches, self.sn)
     }
 }
 
-impl Updates {
+impl UpdateBatch {
     pub fn new() -> Self {
-        Updates { sn: 0, vec: vec![] }
+        UpdateBatch {
+            sn: 0,
+            batches: vec![],
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::updates::Updates;
+use crate::update_batch::UpdateBatch;
 use rocksdb::DBWALIterator;
 
 pub struct UpdateIterator {
@@ -6,17 +6,17 @@ pub struct UpdateIterator {
 }
 
 impl Iterator for UpdateIterator {
-    type Item = Updates;
+    type Item = UpdateBatch;
     fn next(&mut self) -> Option<Self::Item> {
         let result = self.inner.next();
         if result.is_none() {
             None
         } else {
-            let (sn, batch) = result.unwrap();
-            let mut updates = Updates::new();
-            updates.sn = sn;
-            batch.iterate(&mut updates);
-            Some(updates)
+            let (sn, b) = result.unwrap();
+            let mut ub = UpdateBatch::new();
+            ub.sn = sn;
+            b.iterate(&mut ub);
+            Some(ub)
         }
     }
 }

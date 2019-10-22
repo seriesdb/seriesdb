@@ -6,8 +6,8 @@ pub mod options;
 pub mod table;
 pub mod types;
 pub mod update;
+pub mod update_batch;
 pub mod update_iterator;
-pub mod updates;
 pub mod utils;
 
 pub use types::*;

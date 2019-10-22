@@ -294,8 +294,8 @@ fn test_get_updates_since() {
         assert_eq!(sn2 + 4, sn3);
         let iter = db.get_updates_since(0).unwrap();
         let mut result = vec![];
-        for updates in iter {
-            result.push(updates);
+        for ub in iter {
+            result.push(ub);
         }
         assert_eq!(format!("{:?}", result), "[[Put {key:b\"\\0\\0\\0\\0\\0\\0\", value:b\"\\0\\0\\x04\\0\"}]@2, [Put {key:b\"\\0\\0\\0\\x01huobi.btc.usdt.1m\", value:b\"\\0\\0\\x04\\0\"}, Put {key:b\"\\0\\0\\0\\x02\\0\\0\\x04\\0\", value:b\"huobi.btc.usdt.1m\"}]@3, [Put {key:b\"\\0\\0\\0\\0\\0\\0\", value:b\"\\0\\0\\x04\\x01\"}]@5, [Put {key:b\"\\0\\0\\0\\x01huobi.btc.usdt.3m\", value:b\"\\0\\0\\x04\\x01\"}, Put {key:b\"\\0\\0\\0\\x02\\0\\0\\x04\\x01\", value:b\"huobi.btc.usdt.3m\"}]@6, [Delete {key:b\"\\0\\0\\0\\x01huobi.btc.usdt.3m\"}, Delete {key:b\"\\0\\0\\0\\x02\\0\\0\\x04\\x01\"}, DeleteRange {from_key:b\"\\0\\0\\x04\\x01\", to_key:b\"\\0\\0\\x04\\x01\\xff\\xff\\xff\\xff\\xff\"}]@8, [Put {key:b\"\\0\\0\\x04\\x01k111\", value:b\"v111\"}]@12, [Delete {key:b\"\\0\\0\\x04\\x01k111\"}]@13, [Put {key:b\"\\0\\0\\x04\\x01k112\", value:b\"v112\"}, Delete {key:b\"\\0\\0\\x04\\x01k111\"}, DeleteRange {from_key:b\"k111\", to_key:b\"k112\"}]@14]");
     })
