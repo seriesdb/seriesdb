@@ -49,7 +49,6 @@ impl Options {
         opts.set_compaction_style(DBCompactionStyle::Universal);
         opts.set_max_background_compactions(4);
         opts.set_max_background_flushes(4);
-        opts.set_disable_auto_compactions(true);
         opts
     }
 }
