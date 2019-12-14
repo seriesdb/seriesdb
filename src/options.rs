@@ -48,6 +48,7 @@ impl Options {
         opts.set_level_zero_slowdown_writes_trigger(800);
         opts.set_disable_auto_compactions(false);
         opts.set_compaction_style(DBCompactionStyle::Level);
+        opts.set_level_zero_file_num_compaction_trigger(32);
         opts.set_max_background_compactions(4);
         opts.set_max_background_flushes(4);
         opts
