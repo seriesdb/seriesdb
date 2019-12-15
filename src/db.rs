@@ -51,6 +51,16 @@ impl Db {
         self.engine.write(batch)
     }
 
+    pub fn truncate_table(&self, name: &str) -> Result<(), Error> {
+        let mut batch = WriteBatch::default();
+        if let Some(id) = self.get_table_id_by_name(name)? {
+            let anchor = build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN);
+            batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor))?;
+            batch.delete_range(id.as_ref(), anchor.as_ref())?;
+        }
+        self.engine.write(batch)
+    }
+
     pub fn destroy_table(&self, name: &str) -> Result<(), Error> {
         let mut batch = WriteBatch::default();
         if let Some(id) = self.get_table_id_by_name(name)? {
@@ -187,6 +197,20 @@ fn test_rename_table() {
         let id_to_name_table_inner_key = build_id_to_name_table_inner_key(table.id);
         let name = table.engine.get(id_to_name_table_inner_key);
         assert_eq!(name.unwrap().unwrap().to_utf8().unwrap(), new_name);
+    });
+}
+
+#[test]
+fn test_truncate_table() {
+    run_test("test_truncate_table", |db| {
+        let name = "huobi.btc.usdt.1min";
+        let table = db.new_table(name).unwrap();
+        table.put(b"k111", b"v111").unwrap();
+        let result = table.get(b"k111");
+        assert_eq!(result.unwrap().unwrap().to_utf8().unwrap(), "v111");
+        db.truncate_table(name).unwrap();
+        let result = table.get(b"k111");
+        assert!(result.unwrap().is_none());
     });
 }
 
