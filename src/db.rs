@@ -38,15 +38,14 @@ impl Db {
             Ok(self.create_table(name)?)
         }
     }
-
-    pub fn rename_table(&self, old_name: &str, new_name: &str) -> Result<(), Error> {
+    pub fn destroy_table(&self, name: &str) -> Result<(), Error> {
         let mut batch = WriteBatch::default();
-        if let Some(id) = self.get_table_id_by_name(old_name)? {
-            let id_to_name_table_inner_key = build_id_to_name_table_inner_key(id);
-            batch.delete(&build_name_to_id_table_inner_key(old_name))?;
-            batch.delete(&id_to_name_table_inner_key)?;
-            batch.put(build_name_to_id_table_inner_key(new_name), id)?;
-            batch.put(id_to_name_table_inner_key, new_name)?;
+        if let Some(id) = self.get_table_id_by_name(name)? {
+            batch.delete(&build_name_to_id_table_inner_key(name))?;
+            batch.delete(&build_id_to_name_table_inner_key(id))?;
+            let anchor = build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN);
+            batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor))?;
+            batch.delete_range(id.as_ref(), anchor.as_ref())?;
         }
         self.engine.write(batch)
     }
@@ -61,14 +60,14 @@ impl Db {
         self.engine.write(batch)
     }
 
-    pub fn destroy_table(&self, name: &str) -> Result<(), Error> {
+    pub fn rename_table(&self, old_name: &str, new_name: &str) -> Result<(), Error> {
         let mut batch = WriteBatch::default();
-        if let Some(id) = self.get_table_id_by_name(name)? {
-            batch.delete(&build_name_to_id_table_inner_key(name))?;
-            batch.delete(&build_id_to_name_table_inner_key(id))?;
-            let anchor = build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN);
-            batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor))?;
-            batch.delete_range(id.as_ref(), anchor.as_ref())?;
+        if let Some(id) = self.get_table_id_by_name(old_name)? {
+            let id_to_name_table_inner_key = build_id_to_name_table_inner_key(id);
+            batch.delete(&build_name_to_id_table_inner_key(old_name))?;
+            batch.delete(&id_to_name_table_inner_key)?;
+            batch.put(build_name_to_id_table_inner_key(new_name), id)?;
+            batch.put(id_to_name_table_inner_key, new_name)?;
         }
         self.engine.write(batch)
     }
@@ -179,24 +178,16 @@ fn test_new_table() {
 }
 
 #[test]
-fn test_rename_table() {
-    run_test("test_rename_table", |db| {
-        let old_name = "huobi.btc.usdt.1min";
-        let new_name = "huobi.btc.usdt.5min";
-        let table = db.new_table(old_name).unwrap();
-        assert!(db.rename_table(old_name, new_name).is_ok());
-
-        let old_name_to_id_table_inner_key = build_name_to_id_table_inner_key(&old_name);
-        let id = table.engine.get(old_name_to_id_table_inner_key);
-        assert!(id.unwrap().is_none());
-
-        let new_name_to_id_table_inner_key = build_name_to_id_table_inner_key(&new_name);
-        let id = table.engine.get(new_name_to_id_table_inner_key);
-        assert_eq!(id.unwrap().unwrap().as_ref(), table.id);
-
-        let id_to_name_table_inner_key = build_id_to_name_table_inner_key(table.id);
-        let name = table.engine.get(id_to_name_table_inner_key);
-        assert_eq!(name.unwrap().unwrap().to_utf8().unwrap(), new_name);
+fn test_destroy_table() {
+    run_test("test_destroy_table", |db| {
+        let name = "huobi.btc.usdt.1min";
+        let table = db.new_table(name).unwrap();
+        table.put(b"k111", b"v111").unwrap();
+        let result = table.get(b"k111");
+        assert_eq!(result.unwrap().unwrap().to_utf8().unwrap(), "v111");
+        db.destroy_table(name).unwrap();
+        let result = table.get(b"k111");
+        assert!(result.unwrap().is_none());
     });
 }
 
@@ -215,16 +206,24 @@ fn test_truncate_table() {
 }
 
 #[test]
-fn test_destroy_table() {
-    run_test("test_destroy_table", |db| {
-        let name = "huobi.btc.usdt.1min";
-        let table = db.new_table(name).unwrap();
-        table.put(b"k111", b"v111").unwrap();
-        let result = table.get(b"k111");
-        assert_eq!(result.unwrap().unwrap().to_utf8().unwrap(), "v111");
-        db.destroy_table(name).unwrap();
-        let result = table.get(b"k111");
-        assert!(result.unwrap().is_none());
+fn test_rename_table() {
+    run_test("test_rename_table", |db| {
+        let old_name = "huobi.btc.usdt.1min";
+        let new_name = "huobi.btc.usdt.5min";
+        let table = db.new_table(old_name).unwrap();
+        assert!(db.rename_table(old_name, new_name).is_ok());
+
+        let old_name_to_id_table_inner_key = build_name_to_id_table_inner_key(&old_name);
+        let id = table.engine.get(old_name_to_id_table_inner_key);
+        assert!(id.unwrap().is_none());
+
+        let new_name_to_id_table_inner_key = build_name_to_id_table_inner_key(&new_name);
+        let id = table.engine.get(new_name_to_id_table_inner_key);
+        assert_eq!(id.unwrap().unwrap().as_ref(), table.id);
+
+        let id_to_name_table_inner_key = build_id_to_name_table_inner_key(table.id);
+        let name = table.engine.get(id_to_name_table_inner_key);
+        assert_eq!(name.unwrap().unwrap().to_utf8().unwrap(), new_name);
     });
 }
 
