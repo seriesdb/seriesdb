@@ -5,7 +5,7 @@ use crate::utils::*;
 use crate::Engine;
 use crate::Error;
 use bytes::Bytes;
-use rocksdb::{DBVector, ReadOptions};
+use rocksdb::ReadOptions;
 use std::fmt;
 
 pub struct Table<'a> {
@@ -51,7 +51,7 @@ impl<'a> Table<'a> {
     }
 
     #[inline]
-    pub fn get<K: AsRef<[u8]>>(&self, key: K) -> Result<Option<DBVector>, Error> {
+    pub fn get<K: AsRef<[u8]>>(&self, key: K) -> Result<Option<Vec<u8>>, Error> {
         self.engine.get(build_inner_key(self.id, key))
     }
 
@@ -81,7 +81,10 @@ fn test_get() {
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111");
         let result = table.get(b"k111");
-        assert_eq!(result.unwrap().unwrap().to_utf8().unwrap(), "v111");
+        assert_eq!(
+            std::str::from_utf8(&result.unwrap().unwrap()).unwrap(),
+            "v111"
+        );
     })
 }
 

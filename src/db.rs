@@ -79,8 +79,8 @@ impl Db {
         let mut iter = self.engine.raw_iterator_opt(&opts);
         iter.seek(ID_TO_NAME_TABLE_ID);
         while iter.valid() {
-            let key = unsafe { iter.key_inner().unwrap() };
-            let value = unsafe { iter.value_inner().unwrap() };
+            let key = iter.key().unwrap();
+            let value = iter.value().unwrap();
             let id = u8s_to_u32(extract_key(key));
             let name = std::str::from_utf8(value).unwrap().to_string();
             result.push((name, id));
@@ -184,7 +184,10 @@ fn test_destroy_table() {
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111").unwrap();
         let result = table.get(b"k111");
-        assert_eq!(result.unwrap().unwrap().to_utf8().unwrap(), "v111");
+        assert_eq!(
+            std::str::from_utf8(&result.unwrap().unwrap()).unwrap(),
+            "v111"
+        );
         db.destroy_table(name).unwrap();
         let result = table.get(b"k111");
         assert!(result.unwrap().is_none());
@@ -198,7 +201,10 @@ fn test_truncate_table() {
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111").unwrap();
         let result = table.get(b"k111");
-        assert_eq!(result.unwrap().unwrap().to_utf8().unwrap(), "v111");
+        assert_eq!(
+            std::str::from_utf8(&result.unwrap().unwrap()).unwrap(),
+            "v111"
+        );
         db.truncate_table(name).unwrap();
         let result = table.get(b"k111");
         assert!(result.unwrap().is_none());
@@ -223,7 +229,10 @@ fn test_rename_table() {
 
         let id_to_name_table_inner_key = build_id_to_name_table_inner_key(table.id);
         let name = table.engine.get(id_to_name_table_inner_key);
-        assert_eq!(name.unwrap().unwrap().to_utf8().unwrap(), new_name);
+        assert_eq!(
+            std::str::from_utf8(&name.unwrap().unwrap()).unwrap(),
+            new_name
+        );
     });
 }
 
@@ -363,7 +372,7 @@ fn test_register_table() {
 
         let name = table.engine.get(id_to_name_table_inner_key);
         assert_eq!(
-            name.unwrap().unwrap().to_utf8().unwrap(),
+            std::str::from_utf8(&name.unwrap().unwrap()).unwrap(),
             "huobi.btc.usdt.1m"
         );
     })

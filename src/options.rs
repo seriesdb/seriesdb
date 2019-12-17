@@ -38,17 +38,17 @@ impl Options {
         opts.set_prefix_extractor(SliceTransform::create_fixed_prefix(TABLE_ID_LEN));
         opts.set_max_open_files(-1);
         opts.set_use_fsync(false);
-        opts.set_bytes_per_sync(8388608);
-        opts.set_table_cache_num_shard_bits(6);
-        opts.set_write_buffer_size(268435456);
+        opts.set_table_cache_num_shard_bits(4);
+        opts.set_write_buffer_size(134217728);
         opts.set_max_write_buffer_number(4);
         opts.set_min_write_buffer_number_to_merge(2);
-        opts.set_target_file_size_base(1073741824);
-        opts.set_level_zero_stop_writes_trigger(1024);
-        opts.set_level_zero_slowdown_writes_trigger(800);
+        opts.set_max_bytes_for_level_base(1073741824);
+        opts.set_max_bytes_for_level_multiplier(8.0);
+        opts.set_target_file_size_base(134217728);
+        opts.set_target_file_size_multiplier(8);
         opts.set_disable_auto_compactions(false);
         opts.set_compaction_style(DBCompactionStyle::Level);
-        opts.set_level_zero_file_num_compaction_trigger(64);
+        opts.set_level_zero_file_num_compaction_trigger(4);
         opts.set_max_background_compactions(4);
         opts.set_max_background_flushes(4);
         opts

@@ -60,7 +60,7 @@ impl<'a> EntryCursor<'a> {
 
     #[inline]
     pub fn key(&self) -> Option<&[u8]> {
-        if let Some(v) = self.inner_key() {
+        if let Some(v) = self.inner.key() {
             Some(extract_key(v))
         } else {
             None
@@ -69,12 +69,7 @@ impl<'a> EntryCursor<'a> {
 
     #[inline]
     pub fn value(&self) -> Option<&[u8]> {
-        unsafe { self.inner.value_inner() }
-    }
-
-    #[inline]
-    fn inner_key(&self) -> Option<&[u8]> {
-        unsafe { self.inner.key_inner() }
+        self.inner.value()
     }
 }
 
