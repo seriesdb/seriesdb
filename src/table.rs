@@ -59,7 +59,7 @@ impl<'a> Table<'a> {
     pub fn cursor(&self) -> EntryCursor {
         let mut opts = ReadOptions::default();
         opts.set_prefix_same_as_start(true);
-        EntryCursor::new(self.engine.raw_iterator_opt(&opts), self.id, &self.anchor)
+        EntryCursor::new(self.engine.raw_iterator_opt(opts), self.id, &self.anchor)
     }
 }
 

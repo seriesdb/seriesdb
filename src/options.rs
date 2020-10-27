@@ -47,12 +47,8 @@ impl Options {
         self.inner.set_level_zero_file_num_compaction_trigger(num);
     }
 
-    pub fn set_max_background_compactions(&mut self, num: i32) {
-        self.inner.set_max_background_compactions(num);
-    }
-
-    pub fn set_max_background_flushes(&mut self, num: i32) {
-        self.inner.set_max_background_flushes(num);
+    pub fn set_max_background_jobs(&mut self, num: i32) {
+        self.inner.set_max_background_jobs(num);
     }
 
     fn build_default_options() -> InnerOptions {
@@ -72,8 +68,7 @@ impl Options {
         opts.set_disable_auto_compactions(false);
         opts.set_compaction_style(DBCompactionStyle::Level);
         opts.set_level_zero_file_num_compaction_trigger(4);
-        opts.set_max_background_compactions(4);
-        opts.set_max_background_flushes(4);
+        opts.set_max_background_jobs(4);
         opts
     }
 }

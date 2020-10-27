@@ -3,7 +3,7 @@ use crate::consts::*;
 use crate::db::Db;
 use crate::types::*;
 use byteorder::{BigEndian, ByteOrder};
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 
 ////////////////////////////////////////////////////////////////////////////////
 /// conversion utils
@@ -73,12 +73,12 @@ pub fn build_userland_table_anchor(table_id: TableId, key_len: u8) -> Bytes {
 
 #[inline]
 pub fn build_inner_key<K: AsRef<[u8]>>(table_id: TableId, key: K) -> Bytes {
-    let key = key.as_ref();
     let table_id = table_id.as_ref();
-    let mut buf = Bytes::with_capacity(table_id.len() + key.len());
+    let key = key.as_ref();
+    let mut buf = BytesMut::with_capacity(table_id.len() + key.len());
     buf.extend_from_slice(table_id);
     buf.extend_from_slice(key);
-    buf
+    buf.freeze()
 }
 
 #[inline]

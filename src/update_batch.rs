@@ -13,8 +13,8 @@ pub struct UpdateBatch {
 impl WriteBatchIterator for UpdateBatch {
     fn put(&mut self, key: Box<[u8]>, value: Box<[u8]>) {
         self.updates.push(Update::Put {
-            key: Bytes::from(key.as_ref()),
-            value: Bytes::from(value.as_ref()),
+            key: Bytes::copy_from_slice(key.as_ref()),
+            value: Bytes::copy_from_slice(value.as_ref()),
         })
     }
     fn delete(&mut self, key: Box<[u8]>) {
@@ -24,7 +24,7 @@ impl WriteBatchIterator for UpdateBatch {
             self.updates.push(Update::DeleteRange { from_key, to_key })
         } else {
             self.updates.push(Update::Delete {
-                key: Bytes::from(key.as_ref()),
+                key: Bytes::copy_from_slice(key.as_ref()),
             })
         }
     }

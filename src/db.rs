@@ -41,11 +41,11 @@ impl Db {
     pub fn destroy_table(&self, name: &str) -> Result<(), Error> {
         let mut batch = WriteBatch::default();
         if let Some(id) = self.get_table_id_by_name(name)? {
-            batch.delete(&build_name_to_id_table_inner_key(name))?;
-            batch.delete(&build_id_to_name_table_inner_key(id))?;
+            batch.delete(&build_name_to_id_table_inner_key(name));
+            batch.delete(&build_id_to_name_table_inner_key(id));
             let anchor = build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN);
-            batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor))?;
-            batch.delete_range(id.as_ref(), anchor.as_ref())?;
+            batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor));
+            batch.delete_range(id.as_ref(), anchor.as_ref());
         }
         self.engine.write(batch)
     }
@@ -54,8 +54,8 @@ impl Db {
         let mut batch = WriteBatch::default();
         if let Some(id) = self.get_table_id_by_name(name)? {
             let anchor = build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN);
-            batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor))?;
-            batch.delete_range(id.as_ref(), anchor.as_ref())?;
+            batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor));
+            batch.delete_range(id.as_ref(), anchor.as_ref());
         }
         self.engine.write(batch)
     }
@@ -64,10 +64,10 @@ impl Db {
         let mut batch = WriteBatch::default();
         if let Some(id) = self.get_table_id_by_name(old_name)? {
             let id_to_name_table_inner_key = build_id_to_name_table_inner_key(id);
-            batch.delete(&build_name_to_id_table_inner_key(old_name))?;
-            batch.delete(&id_to_name_table_inner_key)?;
-            batch.put(build_name_to_id_table_inner_key(new_name), id)?;
-            batch.put(id_to_name_table_inner_key, new_name)?;
+            batch.delete(&build_name_to_id_table_inner_key(old_name));
+            batch.delete(&id_to_name_table_inner_key);
+            batch.put(build_name_to_id_table_inner_key(new_name), id);
+            batch.put(id_to_name_table_inner_key, new_name);
         }
         self.engine.write(batch)
     }
@@ -76,7 +76,7 @@ impl Db {
         let mut result: Vec<(String, u32)> = Vec::new();
         let mut opts = ReadOptions::default();
         opts.set_prefix_same_as_start(true);
-        let mut iter = self.engine.raw_iterator_opt(&opts);
+        let mut iter = self.engine.raw_iterator_opt(opts);
         iter.seek(ID_TO_NAME_TABLE_ID);
         while iter.valid() {
             let key = iter.key().unwrap();
@@ -164,8 +164,8 @@ impl Db {
         name: &str,
     ) -> Result<(), Error> {
         let mut batch = WriteBatch::default();
-        batch.put(name_to_id_table_inner_key, id)?;
-        batch.put(id_to_name_table_inner_key, name)?;
+        batch.put(name_to_id_table_inner_key, id);
+        batch.put(id_to_name_table_inner_key, name);
         self.engine.write(batch)
     }
 }
@@ -294,9 +294,9 @@ fn test_get_latest_sn() {
         let sn2 = db.get_latest_sn();
         assert_eq!(sn1 + 2, sn2);
         let mut batch = table.batch();
-        batch.put(b"k111", b"v111").unwrap();
-        batch.delete(b"k111").unwrap();
-        batch.delete_range(b"k111", b"k112").unwrap();
+        batch.put(b"k111", b"v111");
+        batch.delete(b"k111");
+        batch.delete_range(b"k111", b"k112");
         table.write(batch).unwrap();
         let sn3 = db.get_latest_sn();
         assert_eq!(sn2 + 4, sn3);
@@ -318,9 +318,9 @@ fn test_get_updates_since() {
         let sn2 = db.get_latest_sn();
         assert_eq!(sn1 + 2, sn2);
         let mut batch = table.batch();
-        batch.put(b"k112", b"v112").unwrap();
-        batch.delete(b"k111").unwrap();
-        batch.delete_range(b"k111", b"k112").unwrap();
+        batch.put(b"k112", b"v112");
+        batch.delete(b"k111");
+        batch.delete_range(b"k111", b"k112");
         table.write(batch).unwrap();
         let sn3 = db.get_latest_sn();
         assert_eq!(sn2 + 4, sn3);
