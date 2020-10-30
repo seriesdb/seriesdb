@@ -5,33 +5,33 @@ use crate::table::Table;
 use crate::types::*;
 use crate::update_iterator::UpdateIterator;
 use crate::utils::*;
-use crate::Engine;
 use crate::Error;
+use rocksdb::DB;
 use rocksdb::{ReadOptions, WriteBatch};
 use std::path::Path;
 
 pub struct Db {
-    pub(in crate) engine: Engine,
+    pub(in crate) inner: DB,
 }
 
 impl Db {
     #[inline]
     pub fn new<P: AsRef<Path>>(path: P, opts: &Options) -> Result<Db, Error> {
         Ok(Db {
-            engine: Engine::open(&opts.inner, path)?,
+            inner: DB::open(&opts.inner, path)?,
         })
     }
 
     #[inline]
     pub fn destroy<P: AsRef<Path>>(path: P) -> Result<(), Error> {
-        Engine::destroy(&Options::new().inner, path)
+        DB::destroy(&Options::new().inner, path)
     }
 
     #[inline]
     pub fn new_table(&self, name: &str) -> Result<Table, Error> {
         if let Some(id) = self.get_table_id_by_name(name)? {
             Ok(Table {
-                engine: &self.engine,
+                db: &self,
                 id,
                 anchor: build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN),
             })
@@ -48,7 +48,7 @@ impl Db {
             batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor));
             batch.delete_range(id.as_ref(), anchor.as_ref());
         }
-        self.engine.write(batch)
+        self.inner.write(batch)
     }
 
     pub fn truncate_table(&self, name: &str) -> Result<(), Error> {
@@ -58,7 +58,7 @@ impl Db {
             batch.delete(&build_delete_range_hint_table_inner_key(&id, &anchor));
             batch.delete_range(id.as_ref(), anchor.as_ref());
         }
-        self.engine.write(batch)
+        self.inner.write(batch)
     }
 
     pub fn rename_table(&self, old_name: &str, new_name: &str) -> Result<(), Error> {
@@ -70,14 +70,14 @@ impl Db {
             batch.put(build_name_to_id_table_inner_key(new_name), id);
             batch.put(id_to_name_table_inner_key, new_name);
         }
-        self.engine.write(batch)
+        self.inner.write(batch)
     }
 
     pub fn get_tables(&self) -> Vec<(String, u32)> {
         let mut result: Vec<(String, u32)> = Vec::new();
         let mut opts = ReadOptions::default();
         opts.set_prefix_same_as_start(true);
-        let mut iter = self.engine.raw_iterator_opt(opts);
+        let mut iter = self.inner.raw_iterator_opt(opts);
         iter.seek(ID_TO_NAME_TABLE_ID);
         while iter.valid() {
             let key = iter.key().unwrap();
@@ -93,7 +93,7 @@ impl Db {
     #[inline]
     pub fn get_table_id_by_name(&self, name: &str) -> Result<Option<TableId>, Error> {
         let name_to_id_table_inner_key = build_name_to_id_table_inner_key(name);
-        if let Some(id) = self.engine.get(name_to_id_table_inner_key)? {
+        if let Some(id) = self.inner.get(name_to_id_table_inner_key)? {
             Ok(Some(u8s_to_table_id(id.as_ref())))
         } else {
             Ok(None)
@@ -103,7 +103,7 @@ impl Db {
     #[inline]
     pub fn get_table_name_by_id(&self, id: TableId) -> Result<Option<String>, Error> {
         let id_to_name_table_inner_key = build_id_to_name_table_inner_key(id);
-        if let Some(name) = self.engine.get(id_to_name_table_inner_key)? {
+        if let Some(name) = self.inner.get(id_to_name_table_inner_key)? {
             Ok(Some(
                 std::str::from_utf8(name.as_ref()).unwrap().to_string(),
             ))
@@ -114,12 +114,12 @@ impl Db {
 
     #[inline]
     pub fn get_latest_sn(&self) -> u64 {
-        self.engine.latest_sequence_number()
+        self.inner.latest_sequence_number()
     }
 
     #[inline]
     pub fn get_updates_since(&self, sn: u64) -> Result<UpdateIterator, Error> {
-        let iter = self.engine.get_updates_since(sn)?;
+        let iter = self.inner.get_updates_since(sn)?;
         Ok(UpdateIterator::new(iter))
     }
 
@@ -130,7 +130,7 @@ impl Db {
 
     #[inline]
     pub fn write(&self, b: BatchX) -> Result<(), Error> {
-        self.engine.write(b.inner)
+        self.inner.write(b.inner)
     }
 
     fn create_table(&self, name: &str) -> Result<Table, Error> {
@@ -144,24 +144,24 @@ impl Db {
             name,
         )?;
         let anchor = build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN);
-        Ok(Table::new(&self.engine, id, anchor))
+        Ok(Table::new(&self, id, anchor))
     }
 
     fn generate_next_table_id(&self) -> Result<TableId, Error> {
         let seed_key = build_info_table_inner_key(SEED_ITEM_ID);
-        if let Some(seed_value) = self.engine.get(&seed_key)? {
+        if let Some(seed_value) = self.inner.get(&seed_key)? {
             let seed_value = u8s_to_u32(seed_value.as_ref());
             if u32_to_table_id(seed_value) >= MAX_USERLAND_TABLE_ID {
                 panic!("Exceeded limit: {:?}", MAX_USERLAND_TABLE_ID)
             }
             let seed_value = seed_value + 1;
             let next_id = u32_to_table_id(seed_value);
-            self.engine.put(&seed_key, next_id)?;
+            self.inner.put(&seed_key, next_id)?;
             Ok(next_id)
         } else {
             // Double write to fixed raw get_updates_since bug.
-            self.engine.put(&seed_key, MIN_USERLAND_TABLE_ID)?;
-            self.engine.put(&seed_key, MIN_USERLAND_TABLE_ID)?;
+            self.inner.put(&seed_key, MIN_USERLAND_TABLE_ID)?;
+            self.inner.put(&seed_key, MIN_USERLAND_TABLE_ID)?;
             Ok(MIN_USERLAND_TABLE_ID)
         }
     }
@@ -177,7 +177,7 @@ impl Db {
         let mut batch = WriteBatch::default();
         batch.put(name_to_id_table_inner_key, id);
         batch.put(id_to_name_table_inner_key, name);
-        self.engine.write(batch)
+        self.inner.write(batch)
     }
 }
 
@@ -231,15 +231,15 @@ fn test_rename_table() {
         assert!(db.rename_table(old_name, new_name).is_ok());
 
         let old_name_to_id_table_inner_key = build_name_to_id_table_inner_key(&old_name);
-        let id = table.engine.get(old_name_to_id_table_inner_key);
+        let id = table.db.inner.get(old_name_to_id_table_inner_key);
         assert!(id.unwrap().is_none());
 
         let new_name_to_id_table_inner_key = build_name_to_id_table_inner_key(&new_name);
-        let id = table.engine.get(new_name_to_id_table_inner_key);
+        let id = table.db.inner.get(new_name_to_id_table_inner_key);
         assert_eq!(id.unwrap().unwrap().as_ref(), table.id);
 
         let id_to_name_table_inner_key = build_id_to_name_table_inner_key(table.id);
-        let name = table.engine.get(id_to_name_table_inner_key);
+        let name = table.db.inner.get(id_to_name_table_inner_key);
         assert_eq!(
             std::str::from_utf8(&name.unwrap().unwrap()).unwrap(),
             new_name
@@ -378,10 +378,10 @@ fn test_register_table() {
         );
         assert!(result.is_ok());
 
-        let id = table.engine.get(name_to_id_table_inner_key);
+        let id = table.db.inner.get(name_to_id_table_inner_key);
         assert_eq!(id.unwrap().unwrap().as_ref(), [0, 0, 4, 0]);
 
-        let name = table.engine.get(id_to_name_table_inner_key);
+        let name = table.db.inner.get(id_to_name_table_inner_key);
         assert_eq!(
             std::str::from_utf8(&name.unwrap().unwrap()).unwrap(),
             "huobi.btc.usdt.1m"

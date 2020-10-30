@@ -1,15 +1,15 @@
 use crate::batch::Batch;
+use crate::db::Db;
 use crate::entry_cursor::EntryCursor;
 use crate::types::*;
 use crate::utils::*;
-use crate::Engine;
 use crate::Error;
 use bytes::Bytes;
 use rocksdb::ReadOptions;
 use std::fmt;
 
 pub struct Table<'a> {
-    pub(in crate) engine: &'a Engine,
+    pub(in crate) db: &'a Db,
     pub(in crate) id: TableId,
     pub(in crate) anchor: Bytes,
 }
@@ -22,8 +22,8 @@ impl<'a> fmt::Debug for Table<'a> {
 
 impl<'a> Table<'a> {
     #[inline]
-    pub(in crate) fn new(engine: &Engine, id: TableId, anchor: Bytes) -> Table {
-        Table { engine, id, anchor }
+    pub(in crate) fn new(db: &Db, id: TableId, anchor: Bytes) -> Table {
+        Table { db, id, anchor }
     }
 
     #[inline]
@@ -32,7 +32,7 @@ impl<'a> Table<'a> {
         K: AsRef<[u8]>,
         V: AsRef<[u8]>,
     {
-        self.engine.put(build_inner_key(self.id, key), value)
+        self.db.inner.put(build_inner_key(self.id, key), value)
     }
 
     #[inline]
@@ -42,24 +42,34 @@ impl<'a> Table<'a> {
 
     #[inline]
     pub fn write(&self, b: Batch) -> Result<(), Error> {
-        self.engine.write(b.inner)
+        self.db.inner.write(b.inner)
     }
 
     #[inline]
     pub fn delete<K: AsRef<[u8]>>(&self, key: K) -> Result<(), Error> {
-        self.engine.delete(build_inner_key(self.id, key))
+        self.db.inner.delete(build_inner_key(self.id, key))
     }
 
     #[inline]
     pub fn get<K: AsRef<[u8]>>(&self, key: K) -> Result<Option<Vec<u8>>, Error> {
-        self.engine.get(build_inner_key(self.id, key))
+        self.db.inner.get(build_inner_key(self.id, key))
     }
 
     #[inline]
     pub fn cursor(&self) -> EntryCursor {
         let mut opts = ReadOptions::default();
         opts.set_prefix_same_as_start(true);
-        EntryCursor::new(self.engine.raw_iterator_opt(opts), self.id, &self.anchor)
+        EntryCursor::new(self.db.inner.raw_iterator_opt(opts), self.id, &self.anchor)
+    }
+
+    #[inline]
+    pub fn db(&self) -> &Db {
+        self.db
+    }
+
+    #[inline]
+    pub fn id(&self) -> TableId {
+        self.id
     }
 }
 
