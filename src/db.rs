@@ -1,3 +1,4 @@
+use crate::batch_x::BatchX;
 use crate::consts::*;
 use crate::options::Options;
 use crate::table::Table;
@@ -120,6 +121,16 @@ impl Db {
     pub fn get_updates_since(&self, sn: u64) -> Result<UpdateIterator, Error> {
         let iter = self.engine.get_updates_since(sn)?;
         Ok(UpdateIterator::new(iter))
+    }
+
+    #[inline]
+    pub fn batch_x() -> BatchX {
+        BatchX::new()
+    }
+
+    #[inline]
+    pub fn write(&self, b: BatchX) -> Result<(), Error> {
+        self.engine.write(b.inner)
     }
 
     fn create_table(&self, name: &str) -> Result<Table, Error> {

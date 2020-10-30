@@ -1,4 +1,5 @@
 pub mod batch;
+pub mod batch_x;
 mod consts;
 pub mod db;
 pub mod entry_cursor;
