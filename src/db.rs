@@ -17,9 +17,7 @@ pub struct Db {
 impl Db {
     #[inline]
     pub fn new<P: AsRef<Path>>(path: P, opts: &Options) -> Result<Db, Error> {
-        Ok(Db {
-            inner: DB::open(&opts.inner, path)?,
-        })
+        Ok(Db { inner: DB::open(&opts.inner, path)? })
     }
 
     #[inline]
@@ -104,9 +102,7 @@ impl Db {
     pub fn get_table_name_by_id(&self, id: TableId) -> Result<Option<String>, Error> {
         let id_to_name_table_inner_key = build_id_to_name_table_inner_key(id);
         if let Some(name) = self.inner.get(id_to_name_table_inner_key)? {
-            Ok(Some(
-                std::str::from_utf8(name.as_ref()).unwrap().to_string(),
-            ))
+            Ok(Some(std::str::from_utf8(name.as_ref()).unwrap().to_string()))
         } else {
             Ok(None)
         }
@@ -137,12 +133,7 @@ impl Db {
         let name_to_id_table_inner_key = build_name_to_id_table_inner_key(name);
         let id = self.generate_next_table_id()?;
         let id_to_name_table_inner_key = build_id_to_name_table_inner_key(id);
-        self.register_table(
-            name_to_id_table_inner_key,
-            id,
-            id_to_name_table_inner_key,
-            name,
-        )?;
+        self.register_table(name_to_id_table_inner_key, id, id_to_name_table_inner_key, name)?;
         let anchor = build_userland_table_anchor(id, MAX_USERLAND_KEY_LEN);
         Ok(Table::new(&self, id, anchor))
     }
@@ -168,10 +159,7 @@ impl Db {
 
     #[inline]
     fn register_table<K: AsRef<[u8]>>(
-        &self,
-        name_to_id_table_inner_key: K,
-        id: TableId,
-        id_to_name_table_inner_key: K,
+        &self, name_to_id_table_inner_key: K, id: TableId, id_to_name_table_inner_key: K,
         name: &str,
     ) -> Result<(), Error> {
         let mut batch = WriteBatch::default();
@@ -183,9 +171,7 @@ impl Db {
 
 #[test]
 fn test_new_table() {
-    run_test("test_new_table", |db| {
-        assert!(db.new_table("huobi.btc.usdt.1min").is_ok())
-    });
+    run_test("test_new_table", |db| assert!(db.new_table("huobi.btc.usdt.1min").is_ok()));
 }
 
 #[test]
@@ -195,10 +181,7 @@ fn test_destroy_table() {
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111").unwrap();
         let result = table.get(b"k111");
-        assert_eq!(
-            std::str::from_utf8(&result.unwrap().unwrap()).unwrap(),
-            "v111"
-        );
+        assert_eq!(std::str::from_utf8(&result.unwrap().unwrap()).unwrap(), "v111");
         db.destroy_table(name).unwrap();
         let result = table.get(b"k111");
         assert!(result.unwrap().is_none());
@@ -212,10 +195,7 @@ fn test_truncate_table() {
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111").unwrap();
         let result = table.get(b"k111");
-        assert_eq!(
-            std::str::from_utf8(&result.unwrap().unwrap()).unwrap(),
-            "v111"
-        );
+        assert_eq!(std::str::from_utf8(&result.unwrap().unwrap()).unwrap(), "v111");
         db.truncate_table(name).unwrap();
         let result = table.get(b"k111");
         assert!(result.unwrap().is_none());
@@ -240,10 +220,7 @@ fn test_rename_table() {
 
         let id_to_name_table_inner_key = build_id_to_name_table_inner_key(table.id);
         let name = table.db.inner.get(id_to_name_table_inner_key);
-        assert_eq!(
-            std::str::from_utf8(&name.unwrap().unwrap()).unwrap(),
-            new_name
-        );
+        assert_eq!(std::str::from_utf8(&name.unwrap().unwrap()).unwrap(), new_name);
     });
 }
 
@@ -270,9 +247,7 @@ fn test_get_table_id_by_name() {
         let table = db.create_table("huobi.btc.usdt.1m").unwrap();
         assert_eq!(table.id, MIN_USERLAND_TABLE_ID);
         assert_eq!(
-            db.get_table_id_by_name("huobi.btc.usdt.1m")
-                .unwrap()
-                .unwrap(),
+            db.get_table_id_by_name("huobi.btc.usdt.1m").unwrap().unwrap(),
             MIN_USERLAND_TABLE_ID
         );
     })
@@ -284,9 +259,7 @@ fn test_get_table_name_by_id() {
         let table = db.create_table("huobi.btc.usdt.1m").unwrap();
         assert_eq!(table.id, MIN_USERLAND_TABLE_ID);
         assert_eq!(
-            db.get_table_name_by_id(MIN_USERLAND_TABLE_ID)
-                .unwrap()
-                .unwrap(),
+            db.get_table_name_by_id(MIN_USERLAND_TABLE_ID).unwrap().unwrap(),
             "huobi.btc.usdt.1m"
         );
     })
@@ -382,9 +355,6 @@ fn test_register_table() {
         assert_eq!(id.unwrap().unwrap().as_ref(), [0, 0, 4, 0]);
 
         let name = table.db.inner.get(id_to_name_table_inner_key);
-        assert_eq!(
-            std::str::from_utf8(&name.unwrap().unwrap()).unwrap(),
-            "huobi.btc.usdt.1m"
-        );
+        assert_eq!(std::str::from_utf8(&name.unwrap().unwrap()).unwrap(), "huobi.btc.usdt.1m");
     })
 }

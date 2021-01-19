@@ -23,9 +23,7 @@ impl WriteBatchIterator for UpdateBatch {
             let (from_key, to_key) = extract_delete_range_hint(key);
             self.updates.push(Update::DeleteRange { from_key, to_key })
         } else {
-            self.updates.push(Update::Delete {
-                key: Bytes::copy_from_slice(key.as_ref()),
-            })
+            self.updates.push(Update::Delete { key: Bytes::copy_from_slice(key.as_ref()) })
         }
     }
 }
@@ -38,9 +36,6 @@ impl Debug for UpdateBatch {
 
 impl UpdateBatch {
     pub fn new() -> Self {
-        UpdateBatch {
-            sn: 0,
-            updates: vec![],
-        }
+        UpdateBatch { sn: 0, updates: vec![] }
     }
 }

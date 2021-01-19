@@ -8,6 +8,7 @@ use bytes::Bytes;
 use rocksdb::ReadOptions;
 use std::fmt;
 
+#[derive(Clone)]
 pub struct Table<'a> {
     pub(in crate) db: &'a Db,
     pub(in crate) id: TableId,
@@ -91,10 +92,7 @@ fn test_get() {
         let table = db.new_table(name).unwrap();
         table.put(b"k111", b"v111");
         let result = table.get(b"k111");
-        assert_eq!(
-            std::str::from_utf8(&result.unwrap().unwrap()).unwrap(),
-            "v111"
-        );
+        assert_eq!(std::str::from_utf8(&result.unwrap().unwrap()).unwrap(), "v111");
     })
 }
 

@@ -7,9 +7,7 @@ pub struct Options {
 
 impl Options {
     pub fn new() -> Self {
-        Options {
-            inner: Self::build_default_options(),
-        }
+        Options { inner: Self::build_default_options() }
     }
 
     pub fn set_table_cache_num_shard_bits(&mut self, num: i32) {

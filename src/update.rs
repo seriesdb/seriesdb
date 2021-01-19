@@ -12,11 +12,9 @@ impl Debug for Update {
         match self {
             Update::Put { key, value } => write!(f, "Put {{key:{:?}, value:{:?}}}", key, value),
             Update::Delete { key } => write!(f, "Delete {{key:{:?}}}", key),
-            Update::DeleteRange { from_key, to_key } => write!(
-                f,
-                "DeleteRange {{from_key:{:?}, to_key:{:?}}}",
-                from_key, to_key
-            ),
+            Update::DeleteRange { from_key, to_key } => {
+                write!(f, "DeleteRange {{from_key:{:?}, to_key:{:?}}}", from_key, to_key)
+            }
         }
     }
 }

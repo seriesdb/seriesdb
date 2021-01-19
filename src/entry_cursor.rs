@@ -11,11 +11,7 @@ pub struct EntryCursor<'a> {
 
 impl<'a> EntryCursor<'a> {
     pub(in crate) fn new(inner: DBRawIterator<'a>, table_id: TableId, anchor: &'a Bytes) -> Self {
-        EntryCursor {
-            inner,
-            table_id,
-            anchor,
-        }
+        EntryCursor { inner, table_id, anchor }
     }
 
     #[inline]
@@ -44,8 +40,7 @@ impl<'a> EntryCursor<'a> {
 
     #[inline]
     pub fn seek_for_prev<K: AsRef<[u8]>>(&mut self, key: K) {
-        self.inner
-            .seek_for_prev(build_inner_key(self.table_id, key));
+        self.inner.seek_for_prev(build_inner_key(self.table_id, key));
     }
 
     #[inline]

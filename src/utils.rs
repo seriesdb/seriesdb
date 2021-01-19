@@ -52,8 +52,7 @@ pub fn build_id_to_name_table_inner_key(table_id: TableId) -> Bytes {
 pub fn build_delete_range_hint_table_inner_key<F, T>(from_key: F, to_key: T) -> Bytes
 where
     F: AsRef<[u8]>,
-    T: AsRef<[u8]>,
-{
+    T: AsRef<[u8]>, {
     let key = rmp_serde::to_vec(&(from_key.as_ref().to_vec(), to_key.as_ref().to_vec())).unwrap();
     build_inner_key(DELETE_RANGE_HINT_TABLE_ID, key)
 }
@@ -103,9 +102,7 @@ fn set_every_bit_to_one(key_len: u8) -> Bytes {
 ////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 pub(in crate) fn run_test<T>(db_name: &str, test: T) -> ()
-where
-    T: FnOnce(Db) -> () + std::panic::UnwindSafe,
-{
+where T: FnOnce(Db) -> () + std::panic::UnwindSafe {
     let mut path = String::from("./data/");
     path.push_str(db_name);
     let db = setup(&path);
@@ -149,10 +146,7 @@ fn test_build_name_to_id_table_inner_key() {
 
 #[test]
 fn test_build_id_to_name_table_inner_key() {
-    assert_eq!(
-        build_id_to_name_table_inner_key([0, 0, 4, 0]),
-        vec![0, 0, 0, 2, 0, 0, 4, 0]
-    );
+    assert_eq!(build_id_to_name_table_inner_key([0, 0, 4, 0]), vec![0, 0, 0, 2, 0, 0, 4, 0]);
 }
 
 #[test]
